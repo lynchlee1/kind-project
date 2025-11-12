@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import tempfile
 
 from typing import Callable, List, Optional, Tuple, Dict, Any
 from selenium import webdriver
@@ -20,8 +21,15 @@ class ChromeDriver:
         self.wait = None
         self.timers = timers
 
-    def setup(self): 
-        self.driver, self.wait = self._setup_driver(headless=self.headless)
+    def setup(self, debug_port=None, user_data_dir=None, data_path=None, cache_dir=None): 
+        # Multiprocessing-supported driver setup
+        self.driver, self.wait = self._setup_driver(
+            headless=self.headless, 
+            debug_port=debug_port,
+            user_data_dir=user_data_dir,
+            data_path=data_path,
+            cache_dir=cache_dir
+        )
     
     def open(self, url: str):
         '''
@@ -176,7 +184,8 @@ class ChromeDriver:
             if frame: self.switch_to_default()
         return results
 
-    def _setup_driver(self, headless):
+    def _setup_driver(self, headless, debug_port=None, user_data_dir=None, data_path=None, cache_dir=None):
+        # Multiprocessing-supported driver setup
         chrome_options = Options()
         if headless:
             chrome_options.add_argument("--headless")
@@ -185,10 +194,32 @@ class ChromeDriver:
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--remote-debugging-port=9222")
-        chrome_options.add_argument("--user-data-dir=/tmp/chrome-user-data")
-        chrome_options.add_argument("--data-path=/tmp/chrome-data")
-        chrome_options.add_argument("--disk-cache-dir=/tmp/chrome-cache")
+        
+        pid = os.getpid()
+        
+        if debug_port is None:
+            # Chrome's default remote debugging port is 9222 : 777 ports available
+            CHROME_DEFAULT_DEBUG_PORT = 9222
+            MAX_PORT = 9999
+            PORT_RANGE = MAX_PORT - CHROME_DEFAULT_DEBUG_PORT
+            debug_port = CHROME_DEFAULT_DEBUG_PORT + 1 + (pid % PORT_RANGE)
+        
+        if user_data_dir is None:
+            user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome-user-data-{pid}")
+        if data_path is None:
+            data_path = os.path.join(tempfile.gettempdir(), f"chrome-data-{pid}")
+        if cache_dir is None:
+            cache_dir = os.path.join(tempfile.gettempdir(), f"chrome-cache-{pid}")
+        
+        # Create directories if they don't exist
+        os.makedirs(user_data_dir, exist_ok=True)
+        os.makedirs(data_path, exist_ok=True)
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        chrome_options.add_argument(f"--remote-debugging-port={debug_port}")
+        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+        chrome_options.add_argument(f"--data-path={data_path}")
+        chrome_options.add_argument(f"--disk-cache-dir={cache_dir}")
         chrome_options.add_argument("--remote-allow-origins=*")
         chrome_options.add_argument("--disable-software-rasterizer")
         chrome_options.add_argument("--no-first-run")

@@ -1,7 +1,6 @@
 import time
 import tkinter as tk
 from tkinter import ttk, scrolledtext
-import threading
 from selenium.webdriver.common.by import By
 
 from utilitylib.driver import TableScraper
@@ -188,7 +187,7 @@ class KINDScraperGUI:
         self.log_text.delete(1.0, tk.END)
         
     def start_scraping(self):
-        """Start scraping in a separate thread"""
+        """Start scraping"""
         if self.is_running:
             return
             
@@ -197,10 +196,12 @@ class KINDScraperGUI:
         self.stop_button.config(state="normal")
         self.clear_log()
         
-        # Start scraping in a separate thread
-        thread = threading.Thread(target=self.run_scraping)
-        thread.daemon = True
-        thread.start()
+        # Start scraping directly
+        self.run_scraping()
+
+    def start(self, function): # Start 'function' function
+        
+        
         
     def stop_scraping(self):
         """Stop scraping"""

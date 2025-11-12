@@ -1,3 +1,6 @@
-# Seibro Data Scraper
+### Mezzanine data scraper
 
-A Python web scraping tool for extracting bond data from the Seibro website.
+세이브로 웹사이트에서 채권 데이터를 자동으로 수집하는 코드입니다.
+
+### 코드 수정시 주의사항
+- 기업 1개당 3-5초가 걸리지만, 되도록 Multithreading은 시도하지 마세요. 세이브로는 일시적으로 많은 요청을 보내면 임시적으로 접속을 차단합니다.
